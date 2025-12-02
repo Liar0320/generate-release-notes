@@ -46,72 +46,78 @@ runs:
         # 获取提交列表（从 base 分支分叉点到 HEAD）
         COMMITS=$(git log --oneline --no-merges "$BASE_BRANCH"..HEAD 2>/dev/null || echo "")
 
-        # 如果没有新提交,使用默认消息
+        # 检查是否有新提交
+        HAS_COMMITS=true
         if [ -z "$COMMITS" ]; then
-          echo "changelog=无新提交" >> $GITHUB_OUTPUT
-          echo "release-notes=无新提交" >> $GITHUB_OUTPUT
-          echo "changelog-file=" >> $GITHUB_OUTPUT
+          HAS_COMMITS=false
           echo "⚠️  未检测到新提交"
-          exit 0
         fi
-
-        # 分类提交
-        FEAT=$(echo "$COMMITS" | grep -i "^[^ ]* feat" || true)
-        FIX=$(echo "$COMMITS" | grep -i "^[^ ]* fix" || true)
-        STYLE=$(echo "$COMMITS" | grep -i "^[^ ]* style" || true)
-        REFACTOR=$(echo "$COMMITS" | grep -i "^[^ ]* refactor" || true)
-        PERF=$(echo "$COMMITS" | grep -i "^[^ ]* perf" || true)
-        DOCS=$(echo "$COMMITS" | grep -i "^[^ ]* docs" || true)
-        CHORE=$(echo "$COMMITS" | grep -i "^[^ ]* chore" || true)
-        TEST=$(echo "$COMMITS" | grep -i "^[^ ]* test" || true)
-        OTHER=$(echo "$COMMITS" | grep -iv "^[^ ]* \(feat\|fix\|style\|refactor\|perf\|docs\|chore\|test\)" || true)
 
         # 构建 changelog
         CHANGELOG=""
 
-        if [ -n "$FEAT" ]; then
-          CHANGELOG="${CHANGELOG}### ✨ 新功能\n${FEAT}\n\n"
-        fi
+        if [ "$HAS_COMMITS" = true ]; then
+          # 分类提交
+          FEAT=$(echo "$COMMITS" | grep -i "^[^ ]* feat" || true)
+          FIX=$(echo "$COMMITS" | grep -i "^[^ ]* fix" || true)
+          STYLE=$(echo "$COMMITS" | grep -i "^[^ ]* style" || true)
+          REFACTOR=$(echo "$COMMITS" | grep -i "^[^ ]* refactor" || true)
+          PERF=$(echo "$COMMITS" | grep -i "^[^ ]* perf" || true)
+          DOCS=$(echo "$COMMITS" | grep -i "^[^ ]* docs" || true)
+          CHORE=$(echo "$COMMITS" | grep -i "^[^ ]* chore" || true)
+          TEST=$(echo "$COMMITS" | grep -i "^[^ ]* test" || true)
+          OTHER=$(echo "$COMMITS" | grep -iv "^[^ ]* \(feat\|fix\|style\|refactor\|perf\|docs\|chore\|test\)" || true)
 
-        if [ -n "$FIX" ]; then
-          CHANGELOG="${CHANGELOG}### 🐛 问题修复\n${FIX}\n\n"
-        fi
+          if [ -n "$FEAT" ]; then
+            CHANGELOG="${CHANGELOG}### ✨ 新功能\n${FEAT}\n\n"
+          fi
 
-        if [ -n "$STYLE" ]; then
-          CHANGELOG="${CHANGELOG}### 💄 样式优化\n${STYLE}\n\n"
-        fi
+          if [ -n "$FIX" ]; then
+            CHANGELOG="${CHANGELOG}### 🐛 问题修复\n${FIX}\n\n"
+          fi
 
-        if [ -n "$REFACTOR" ]; then
-          CHANGELOG="${CHANGELOG}### ♻️ 代码重构\n${REFACTOR}\n\n"
-        fi
+          if [ -n "$STYLE" ]; then
+            CHANGELOG="${CHANGELOG}### 💄 样式优化\n${STYLE}\n\n"
+          fi
 
-        if [ -n "$PERF" ]; then
-          CHANGELOG="${CHANGELOG}### ⚡ 性能优化\n${PERF}\n\n"
-        fi
+          if [ -n "$REFACTOR" ]; then
+            CHANGELOG="${CHANGELOG}### ♻️ 代码重构\n${REFACTOR}\n\n"
+          fi
 
-        if [ -n "$DOCS" ]; then
-          CHANGELOG="${CHANGELOG}### 📝 文档更新\n${DOCS}\n\n"
-        fi
+          if [ -n "$PERF" ]; then
+            CHANGELOG="${CHANGELOG}### ⚡ 性能优化\n${PERF}\n\n"
+          fi
 
-        if [ -n "$CHORE" ]; then
-          CHANGELOG="${CHANGELOG}### 🔧 构建/工具\n${CHORE}\n\n"
-        fi
+          if [ -n "$DOCS" ]; then
+            CHANGELOG="${CHANGELOG}### 📝 文档更新\n${DOCS}\n\n"
+          fi
 
-        if [ -n "$TEST" ]; then
-          CHANGELOG="${CHANGELOG}### ✅ 测试\n${TEST}\n\n"
-        fi
+          if [ -n "$CHORE" ]; then
+            CHANGELOG="${CHANGELOG}### 🔧 构建/工具\n${CHORE}\n\n"
+          fi
 
-        if [ -n "$OTHER" ]; then
-          CHANGELOG="${CHANGELOG}### 📦 其他更新\n${OTHER}\n\n"
+          if [ -n "$TEST" ]; then
+            CHANGELOG="${CHANGELOG}### ✅ 测试\n${TEST}\n\n"
+          fi
+
+          if [ -n "$OTHER" ]; then
+            CHANGELOG="${CHANGELOG}### 📦 其他更新\n${OTHER}\n\n"
+          fi
+        else
+          CHANGELOG="暂无新提交"
         fi
 
         # 获取必要的变量
         CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
-        COMMIT_COUNT=$(echo "$COMMITS" | wc -l)
-        COMMIT_HASH="${GITHUB_SHA:0:7}"
-
-        # 获取最新提交的消息（仅标题行，避免多行消息破坏格式）
-        COMMIT_MESSAGE=$(git log -1 --pretty=%s 2>/dev/null || echo "Auto-generated release notes")
+        if [ "$HAS_COMMITS" = true ]; then
+          COMMIT_COUNT=$(echo "$COMMITS" | wc -l)
+          COMMIT_HASH="${GITHUB_SHA:0:7}"
+          COMMIT_MESSAGE=$(git log -1 --pretty=%s 2>/dev/null || echo "Auto-generated release notes")
+        else
+          COMMIT_COUNT=0
+          COMMIT_HASH="${GITHUB_SHA:0:7}"
+          COMMIT_MESSAGE="无新提交"
+        fi
 
         # 输出纯 changelog
         {
