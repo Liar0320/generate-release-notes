@@ -113,6 +113,20 @@ runs:
         # 获取最新提交的消息（仅标题行，避免多行消息破坏格式）
         COMMIT_MESSAGE=$(git log -1 --pretty=%s 2>/dev/null || echo "Auto-generated release notes")
 
+        # 构建完整的 Release Notes（包含元数据）
+        RELEASE_NOTES="🧪 **构建信息**
+📌 基于分支: $BASE_BRANCH
+🌿 当前分支: $CURRENT_BRANCH
+🔢 提交数量: $COMMIT_COUNT
+🔖 Commit: $COMMIT_HASH - $COMMIT_MESSAGE
+
+## 📋 更新内容 (相对于 $BASE_BRANCH 分支)
+
+$CHANGELOG
+
+## 📝 补充说明
+此为自动生成的更新日志，基于约定式提交规范分类"
+
         # 输出纯 changelog
         {
           echo "changelog<<EOF"
@@ -120,20 +134,10 @@ runs:
           echo "EOF"
         } >> $GITHUB_OUTPUT
 
-        # 构建完整的 Release Notes（包含元数据）
+        # 输出完整的 Release Notes
         {
           echo "release-notes<<EOF"
-          echo "🧪 **构建信息**"
-          echo "📌 基于分支: $BASE_BRANCH"
-          echo "🌿 当前分支: $CURRENT_BRANCH"
-          echo "🔢 提交数量: $COMMIT_COUNT"
-          echo "🔖 Commit: $COMMIT_HASH - $COMMIT_MESSAGE"
-          echo ""
-          echo "## 📋 更新内容 (相对于 $BASE_BRANCH 分支)"
-          echo ""
-          echo -e "$CHANGELOG"
-          echo "## 📝 补充说明"
-          echo "此为自动生成的更新日志，基于约定式提交规范分类"
+          echo -e "$RELEASE_NOTES"
           echo "EOF"
         } >> $GITHUB_OUTPUT
 
