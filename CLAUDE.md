@@ -17,9 +17,12 @@ This is a GitHub Action that automatically generates Changelog from git commits 
 
 ### Inputs
 - `base-branch` (optional, default: "main"): Base branch to compare against
+- `output-file` (optional): Local file path to save complete Release Notes
 
 ### Outputs
-- `changelog`: Generated changelog content in Markdown format
+- `changelog`: Pure changelog content (only categorized commit entries)
+- `release-notes`: Complete Release Notes with metadata header and footer
+- `changelog-file`: Path to saved Release Notes file (if output-file is specified)
 
 ## Core Logic
 
@@ -38,8 +41,16 @@ The action performs the following steps:
    - `test:` → ✅ 测试 (Tests)
    - Others → 📦 其他更新 (Other)
 
-4. **Build output** - Constructs multi-line Markdown with only non-empty categories
-5. **Output result** - Writes to `$GITHUB_OUTPUT` using heredoc syntax for proper multi-line handling
+4. **Build changelog** - Constructs multi-line Markdown with only non-empty categories
+5. **Create Release Notes** - Builds complete Release Notes with built-in format:
+   - Header with metadata: base branch, current branch, commit count, commit hash and message
+   - Title: "## 📋 更新内容 (相对于 {base_branch} 分支)"
+   - Full changelog content
+   - Footer: "## 📝 补充说明"
+6. **Output result** - Writes to `$GITHUB_OUTPUT` using heredoc syntax:
+   - `changelog`: Pure changelog (for simple cases)
+   - `release-notes`: Complete Release Notes with metadata
+7. **File generation** - If `output-file` is specified, saves complete Release Notes to file
 
 ## How It Works
 
@@ -73,11 +84,27 @@ The script uses bash string matching with `grep -i` (case-insensitive) to detect
 
 ### Custom Base Branch
 ```yaml
-- name: Generate Changelog from develop
+- name: Generate Release Notes from develop
   uses: Liar0320/generate-release-notes@v1.0.0
   id: release
   with:
     base-branch: develop
+```
+
+### Save to File and Send to WeCom
+```yaml
+- name: Generate Release Notes
+  uses: Liar0320/generate-release-notes@v1.0.0
+  id: release
+  with:
+    output-file: RELEASE_NOTES.md
+    base-branch: main
+
+- name: Send to WeCom
+  uses: Liar0320/wecom-notify@v1.0.0
+  with:
+    body_path: RELEASE_NOTES.md
+    robots_key: ${{ secrets.WECOM_ROBOTS_KEY }}
 ```
 
 ## Development Notes

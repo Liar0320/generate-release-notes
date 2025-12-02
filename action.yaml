@@ -13,13 +13,15 @@ inputs:
   output-file:
     required: false
     default: ''
-    description: 'Path to write changelog to local file (e.g., CHANGELOG.md). Leave empty to skip file generation'
+    description: 'Path to write complete changelog with metadata to file (e.g., RELEASE_NOTES.md). Leave empty to skip file generation'
 
 outputs:
   changelog:
-    description: 'Generated changelog content in markdown format'
+    description: 'Pure changelog content in markdown format (only commit entries)'
+  release-notes:
+    description: 'Complete release notes with metadata header and footer'
   changelog-file:
-    description: 'Path to the generated changelog file (empty if not generated)'
+    description: 'Path to the generated release notes file (if output-file is specified)'
 
 runs:
   using: composite
@@ -47,6 +49,8 @@ runs:
         # 如果没有新提交,使用默认消息
         if [ -z "$COMMITS" ]; then
           echo "changelog=无新提交" >> $GITHUB_OUTPUT
+          echo "release-notes=无新提交" >> $GITHUB_OUTPUT
+          echo "changelog-file=" >> $GITHUB_OUTPUT
           echo "⚠️  未检测到新提交"
           exit 0
         fi
@@ -101,18 +105,45 @@ runs:
           CHANGELOG="${CHANGELOG}### 📦 其他更新\n${OTHER}\n\n"
         fi
 
-        # 输出到 GITHUB_OUTPUT(处理多行文本)
-        echo "changelog<<EOF" >> $GITHUB_OUTPUT
-        echo -e "$CHANGELOG" >> $GITHUB_OUTPUT
-        echo "EOF" >> $GITHUB_OUTPUT
+        # 获取必要的变量
+        CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")
+        COMMIT_COUNT=$(echo "$COMMITS" | wc -l)
+        COMMIT_HASH="${GITHUB_SHA:0:7}"
 
-        # 如果指定了输出文件，将 changelog 写入文件
+        # 获取最新提交的消息（仅标题行，避免多行消息破坏格式）
+        COMMIT_MESSAGE=$(git log -1 --pretty=%s 2>/dev/null || echo "Auto-generated release notes")
+
+        # 输出纯 changelog
+        {
+          echo "changelog<<EOF"
+          echo -e "$CHANGELOG"
+          echo "EOF"
+        } >> $GITHUB_OUTPUT
+
+        # 构建完整的 Release Notes（包含元数据）
+        {
+          echo "release-notes<<EOF"
+          echo "🧪 **构建信息**"
+          echo "📌 基于分支: $BASE_BRANCH"
+          echo "🌿 当前分支: $CURRENT_BRANCH"
+          echo "🔢 提交数量: $COMMIT_COUNT"
+          echo "🔖 Commit: $COMMIT_HASH - $COMMIT_MESSAGE"
+          echo ""
+          echo "## 📋 更新内容 (相对于 $BASE_BRANCH 分支)"
+          echo ""
+          echo -e "$CHANGELOG"
+          echo "## 📝 补充说明"
+          echo "此为自动生成的更新日志，基于约定式提交规范分类"
+          echo "EOF"
+        } >> $GITHUB_OUTPUT
+
+        # 如果指定了输出文件，将完整的 Release Notes 写入文件
         OUTPUT_FILE="${{ inputs.output-file }}"
         if [ -n "$OUTPUT_FILE" ]; then
-          echo -e "$CHANGELOG" > "$OUTPUT_FILE"
+          echo -e "$RELEASE_NOTES" > "$OUTPUT_FILE"
           echo "changelog-file=$OUTPUT_FILE" >> $GITHUB_OUTPUT
-          echo "✅ Changelog 已写入文件: $OUTPUT_FILE"
+          echo "✅ Release Notes 已写入文件: $OUTPUT_FILE"
         else
           echo "changelog-file=" >> $GITHUB_OUTPUT
-          echo "✅ Changelog 生成完成（未生成文件）"
+          echo "✅ Changelog 生成完成"
         fi

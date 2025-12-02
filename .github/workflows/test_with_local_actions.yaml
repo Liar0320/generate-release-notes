@@ -11,19 +11,27 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Generate changelog to file
+      - name: Generate Release Notes
         uses: ./
         id: release
-        with:
-          output-file: CHANGELOG.md
 
-      - name: Display changelog from output
+      - name: Display pure changelog from output
         run: |
-          echo "从输出获取的 Changelog："
+          echo "=== 纯 Changelog 输出 ==="
           echo "${{ steps.release.outputs.changelog }}"
 
-      - name: Display changelog file
-        if: steps.release.outputs.changelog-file != ''
+      - name: Display complete release notes from output
         run: |
-          echo "从文件读取的 Changelog："
-          cat "${{ steps.release.outputs.changelog-file }}"
+          echo "=== 完整 Release Notes 输出 ==="
+          echo "${{ steps.release.outputs.release-notes }}"
+
+      - name: Generate Release Notes to file
+        uses: ./
+        id: release_file
+        with:
+          output-file: RELEASE_NOTES.md
+
+      - name: Display saved file
+        run: |
+          echo "=== 从文件读取 Release Notes ==="
+          cat RELEASE_NOTES.md

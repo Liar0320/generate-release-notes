@@ -20,13 +20,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Generate changelog from marketplace
+      - name: Generate Release Notes from marketplace
         uses: Liar0320/generate-release-notes@v1.0.0
         id: release
         with:
           base-branch: ${{ github.event.inputs.base_branch || 'main' }}
+          output-file: RELEASE_NOTES.md
 
-      - name: Display changelog
+      - name: Display Release Notes file
         run: |
-          echo "生成的 Changelog:"
-          echo "${{ steps.release.outputs.changelog }}"
+          echo "=== 生成的 Release Notes 文件 ==="
+          cat RELEASE_NOTES.md

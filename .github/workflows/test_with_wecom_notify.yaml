@@ -12,7 +12,7 @@ on:
           - 'false'
 
 jobs:
-  test:
+  notify:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
@@ -20,21 +20,21 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Generate changelog
+      - name: Generate Release Notes
         uses: ./
         id: release
         with:
-          output-file: CHANGELOG.md
+          output-file: RELEASE_NOTES.md
           base-branch: main
 
-      - name: Display generated file
+      - name: Display generated Release Notes
         run: |
-          echo "生成的 CHANGELOG.md 内容："
-          cat CHANGELOG.md
+          echo "=== 生成的 Release Notes 内容 ==="
+          cat RELEASE_NOTES.md
 
       - name: Send to WeCom
         uses: Liar0320/wecom-notify@v1.0.0
         with:
-          body_path: CHANGELOG.md
+          body_path: RELEASE_NOTES.md
           robots_key: ${{ secrets.WECOM_ROBOTS_KEY }}
           dry_run: ${{ github.event.inputs.dry_run }}
