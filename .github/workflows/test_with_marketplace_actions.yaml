@@ -21,7 +21,7 @@ jobs:
           fetch-depth: 0
 
       - name: Generate Release Notes from marketplace
-        uses: Liar0320/generate-release-notes@v1.0.0
+        uses: Liar0320/generate-release-notes@v1.0.1
         id: release
         with:
           base-branch: ${{ github.event.inputs.base_branch || 'main' }}
