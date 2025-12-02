@@ -1,0 +1,118 @@
+name: 'Generate Release Notes'
+description: 'Automatically generate changelog from commits between main branch and current branch'
+author: 'Liar0320'
+branding:
+  icon: 'file-text'
+  color: 'green'
+
+inputs:
+  base-branch:
+    required: false
+    default: 'main'
+    description: 'Base branch to compare against (default: main)'
+  output-file:
+    required: false
+    default: ''
+    description: 'Path to write changelog to local file (e.g., CHANGELOG.md). Leave empty to skip file generation'
+
+outputs:
+  changelog:
+    description: 'Generated changelog content in markdown format'
+  changelog-file:
+    description: 'Path to the generated changelog file (empty if not generated)'
+
+runs:
+  using: composite
+  steps:
+    - name: Generate changelog from commits
+      id: changelog
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        # 确保 base 分支引用存在
+        BASE_BRANCH="${{ inputs.base-branch }}"
+        echo "📝 生成从 $BASE_BRANCH 分支到当前分支的更新日志..."
+
+        # 获取 base 分支的最新提交
+        git fetch origin "$BASE_BRANCH":"$BASE_BRANCH" 2>/dev/null || git fetch origin "$BASE_BRANCH" || {
+          echo "⚠️  无法获取 $BASE_BRANCH 分支" >&2
+          echo "changelog=无法获取基础分支" >> $GITHUB_OUTPUT
+          exit 0
+        }
+
+        # 获取提交列表（从 base 分支分叉点到 HEAD）
+        COMMITS=$(git log --oneline --no-merges "$BASE_BRANCH"..HEAD 2>/dev/null || echo "")
+
+        # 如果没有新提交,使用默认消息
+        if [ -z "$COMMITS" ]; then
+          echo "changelog=无新提交" >> $GITHUB_OUTPUT
+          echo "⚠️  未检测到新提交"
+          exit 0
+        fi
+
+        # 分类提交
+        FEAT=$(echo "$COMMITS" | grep -i "^[^ ]* feat" || true)
+        FIX=$(echo "$COMMITS" | grep -i "^[^ ]* fix" || true)
+        STYLE=$(echo "$COMMITS" | grep -i "^[^ ]* style" || true)
+        REFACTOR=$(echo "$COMMITS" | grep -i "^[^ ]* refactor" || true)
+        PERF=$(echo "$COMMITS" | grep -i "^[^ ]* perf" || true)
+        DOCS=$(echo "$COMMITS" | grep -i "^[^ ]* docs" || true)
+        CHORE=$(echo "$COMMITS" | grep -i "^[^ ]* chore" || true)
+        TEST=$(echo "$COMMITS" | grep -i "^[^ ]* test" || true)
+        OTHER=$(echo "$COMMITS" | grep -iv "^[^ ]* \(feat\|fix\|style\|refactor\|perf\|docs\|chore\|test\)" || true)
+
+        # 构建 changelog
+        CHANGELOG=""
+
+        if [ -n "$FEAT" ]; then
+          CHANGELOG="${CHANGELOG}### ✨ 新功能\n${FEAT}\n\n"
+        fi
+
+        if [ -n "$FIX" ]; then
+          CHANGELOG="${CHANGELOG}### 🐛 问题修复\n${FIX}\n\n"
+        fi
+
+        if [ -n "$STYLE" ]; then
+          CHANGELOG="${CHANGELOG}### 💄 样式优化\n${STYLE}\n\n"
+        fi
+
+        if [ -n "$REFACTOR" ]; then
+          CHANGELOG="${CHANGELOG}### ♻️ 代码重构\n${REFACTOR}\n\n"
+        fi
+
+        if [ -n "$PERF" ]; then
+          CHANGELOG="${CHANGELOG}### ⚡ 性能优化\n${PERF}\n\n"
+        fi
+
+        if [ -n "$DOCS" ]; then
+          CHANGELOG="${CHANGELOG}### 📝 文档更新\n${DOCS}\n\n"
+        fi
+
+        if [ -n "$CHORE" ]; then
+          CHANGELOG="${CHANGELOG}### 🔧 构建/工具\n${CHORE}\n\n"
+        fi
+
+        if [ -n "$TEST" ]; then
+          CHANGELOG="${CHANGELOG}### ✅ 测试\n${TEST}\n\n"
+        fi
+
+        if [ -n "$OTHER" ]; then
+          CHANGELOG="${CHANGELOG}### 📦 其他更新\n${OTHER}\n\n"
+        fi
+
+        # 输出到 GITHUB_OUTPUT(处理多行文本)
+        echo "changelog<<EOF" >> $GITHUB_OUTPUT
+        echo -e "$CHANGELOG" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+        # 如果指定了输出文件，将 changelog 写入文件
+        OUTPUT_FILE="${{ inputs.output-file }}"
+        if [ -n "$OUTPUT_FILE" ]; then
+          echo -e "$CHANGELOG" > "$OUTPUT_FILE"
+          echo "changelog-file=$OUTPUT_FILE" >> $GITHUB_OUTPUT
+          echo "✅ Changelog 已写入文件: $OUTPUT_FILE"
+        else
+          echo "changelog-file=" >> $GITHUB_OUTPUT
+          echo "✅ Changelog 生成完成（未生成文件）"
+        fi

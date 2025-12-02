@@ -1,0 +1,29 @@
+name: Test Local Action
+
+on: [push, pull_request]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Generate changelog to file
+        uses: ./
+        id: release
+        with:
+          output-file: CHANGELOG.md
+
+      - name: Display changelog from output
+        run: |
+          echo "从输出获取的 Changelog："
+          echo "${{ steps.release.outputs.changelog }}"
+
+      - name: Display changelog file
+        if: steps.release.outputs.changelog-file != ''
+        run: |
+          echo "从文件读取的 Changelog："
+          cat "${{ steps.release.outputs.changelog-file }}"

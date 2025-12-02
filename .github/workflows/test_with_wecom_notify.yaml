@@ -1,0 +1,40 @@
+name: Test with WeCom Notify
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run mode (skip actual WeCom request)'
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Generate changelog
+        uses: ./
+        id: release
+        with:
+          output-file: CHANGELOG.md
+          base-branch: main
+
+      - name: Display generated file
+        run: |
+          echo "生成的 CHANGELOG.md 内容："
+          cat CHANGELOG.md
+
+      - name: Send to WeCom
+        uses: Liar0320/wecom-notify@v1.0.0
+        with:
+          body_path: CHANGELOG.md
+          robots_key: ${{ secrets.WECOM_ROBOTS_KEY }}
+          dry_run: ${{ github.event.inputs.dry_run }}

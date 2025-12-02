@@ -1,0 +1,32 @@
+name: Test Marketplace Action
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_branch:
+        description: 'Base branch to compare against'
+        default: 'main'
+        type: choice
+        options:
+          - main
+          - develop
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Generate changelog from marketplace
+        uses: Liar0320/generate-release-notes@v1.0.0
+        id: release
+        with:
+          base-branch: ${{ github.event.inputs.base_branch || 'main' }}
+
+      - name: Display changelog
+        run: |
+          echo "生成的 Changelog:"
+          echo "${{ steps.release.outputs.changelog }}"
