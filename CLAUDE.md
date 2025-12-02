@@ -46,7 +46,6 @@ The action performs the following steps:
    - Header with metadata: base branch, current branch, commit count, commit hash and message
    - Title: "## 📋 更新内容 (相对于 {base_branch} 分支)"
    - Full changelog content
-   - Footer: "## 📝 补充说明"
 6. **Output result** - Writes to `$GITHUB_OUTPUT` using heredoc syntax:
    - `changelog`: Pure changelog (for simple cases)
    - `release-notes`: Complete Release Notes with metadata
