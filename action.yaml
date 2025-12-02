@@ -18,10 +18,13 @@ inputs:
 outputs:
   changelog:
     description: 'Pure changelog content in markdown format (only commit entries)'
+    value: ${{ steps.changelog.outputs.changelog }}
   release-notes:
     description: 'Complete release notes with metadata header and footer'
+    value: ${{ steps.changelog.outputs.release-notes }}
   changelog-file:
     description: 'Path to the generated release notes file (if output-file is specified)'
+    value: ${{ steps.changelog.outputs.changelog-file }}
 
 runs:
   using: composite
