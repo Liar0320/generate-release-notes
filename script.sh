@@ -117,30 +117,6 @@ else
   COMMIT_MESSAGE="无新提交"
 fi
 
-# 构建完整的 Release Notes
-read -r -d '' RELEASE_NOTES << 'RELEASE_EOF' || true
-🧪 **构建信息**
-📌 基于分支: BASE_BRANCH_PLACEHOLDER
-🌿 当前分支: CURRENT_BRANCH_PLACEHOLDER
-🔢 提交数量: COMMIT_COUNT_PLACEHOLDER
-🔖 Commit: COMMIT_HASH_PLACEHOLDER - COMMIT_MESSAGE_PLACEHOLDER
-
-## 📋 更新内容 (相对于 BASE_BRANCH_PLACEHOLDER 分支)
-
-CHANGELOG_PLACEHOLDER
-
-## 📝 补充说明
-此为自动生成的更新日志，基于约定式提交规范分类
-RELEASE_EOF
-
-# 替换占位符
-RELEASE_NOTES="${RELEASE_NOTES//BASE_BRANCH_PLACEHOLDER/$BASE_BRANCH}"
-RELEASE_NOTES="${RELEASE_NOTES//CURRENT_BRANCH_PLACEHOLDER/$CURRENT_BRANCH}"
-RELEASE_NOTES="${RELEASE_NOTES//COMMIT_COUNT_PLACEHOLDER/$COMMIT_COUNT}"
-RELEASE_NOTES="${RELEASE_NOTES//COMMIT_HASH_PLACEHOLDER/$COMMIT_HASH}"
-RELEASE_NOTES="${RELEASE_NOTES//COMMIT_MESSAGE_PLACEHOLDER/$COMMIT_MESSAGE}"
-RELEASE_NOTES="${RELEASE_NOTES//CHANGELOG_PLACEHOLDER/$CHANGELOG}"
-
 # 输出纯 changelog
 {
   echo "changelog<<EOF"
@@ -148,16 +124,40 @@ RELEASE_NOTES="${RELEASE_NOTES//CHANGELOG_PLACEHOLDER/$CHANGELOG}"
   echo "EOF"
 } >> "$GITHUB_OUTPUT"
 
-# 输出完整的 Release Notes
+# 构建完整的 Release Notes 并输出
 {
   echo "release-notes<<EOF"
-  echo "$RELEASE_NOTES"
+  echo "🧪 **构建信息**"
+  echo "📌 基于分支: $BASE_BRANCH"
+  echo "🌿 当前分支: $CURRENT_BRANCH"
+  echo "🔢 提交数量: $COMMIT_COUNT"
+  echo "🔖 Commit: $COMMIT_HASH - $COMMIT_MESSAGE"
+  echo ""
+  echo "## 📋 更新内容 (相对于 $BASE_BRANCH 分支)"
+  echo ""
+  echo "$CHANGELOG"
+  echo ""
+  echo "## 📝 补充说明"
+  echo "此为自动生成的更新日志，基于约定式提交规范分类"
   echo "EOF"
 } >> "$GITHUB_OUTPUT"
 
 # 如果指定了输出文件，将完整的 Release Notes 写入文件
 if [ -n "$OUTPUT_FILE" ]; then
-  echo "$RELEASE_NOTES" > "$OUTPUT_FILE"
+  {
+    echo "🧪 **构建信息**"
+    echo "📌 基于分支: $BASE_BRANCH"
+    echo "🌿 当前分支: $CURRENT_BRANCH"
+    echo "🔢 提交数量: $COMMIT_COUNT"
+    echo "🔖 Commit: $COMMIT_HASH - $COMMIT_MESSAGE"
+    echo ""
+    echo "## 📋 更新内容 (相对于 $BASE_BRANCH 分支)"
+    echo ""
+    echo "$CHANGELOG"
+    echo ""
+    echo "## 📝 补充说明"
+    echo "此为自动生成的更新日志，基于约定式提交规范分类"
+  } > "$OUTPUT_FILE"
   echo "changelog-file=$OUTPUT_FILE" >> "$GITHUB_OUTPUT"
   echo "✅ Release Notes 已写入文件: $OUTPUT_FILE"
 else
