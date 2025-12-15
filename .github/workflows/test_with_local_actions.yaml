@@ -39,3 +39,16 @@ jobs:
         run: |
           echo "=== 从文件读取 Release Notes ==="
           cat RELEASE_NOTES.md
+
+      - name: Test tag comparison mode
+        uses: ./
+        id: release_tag
+        with:
+          compare-mode: tag
+
+      - name: Display tag comparison result
+        run: |
+          echo "=== 标签比较模式输出 ==="
+          echo "当前标签: ${{ steps.release_tag.outputs.current-tag }}"
+          echo "上一标签: ${{ steps.release_tag.outputs.previous-tag }}"
+          echo "${{ steps.release_tag.outputs.release-notes }}"

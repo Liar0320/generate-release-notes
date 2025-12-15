@@ -6,10 +6,14 @@ branding:
   color: 'green'
 
 inputs:
+  compare-mode:
+    required: false
+    default: 'branch'
+    description: 'Comparison mode: "branch" to compare against base branch, "tag" to compare between version tags (auto-detect previous tag)'
   base-branch:
     required: false
     default: 'main'
-    description: 'Base branch to compare against (default: main)'
+    description: 'Base branch to compare against (only used when compare-mode is "branch")'
   output-file:
     required: false
     default: ''
@@ -25,6 +29,12 @@ outputs:
   changelog-file:
     description: 'Path to the generated release notes file (if output-file is specified)'
     value: ${{ steps.changelog.outputs.changelog-file }}
+  current-tag:
+    description: 'Current version tag (only available when compare-mode is "tag")'
+    value: ${{ steps.changelog.outputs.current-tag }}
+  previous-tag:
+    description: 'Previous version tag (only available when compare-mode is "tag")'
+    value: ${{ steps.changelog.outputs.previous-tag }}
 
 runs:
   using: composite
@@ -37,4 +47,4 @@ runs:
         if command -v cygpath >/dev/null 2>&1; then
           ACTION_PATH="$(cygpath -u "$ACTION_PATH")"
         fi
-        "$ACTION_PATH/script.sh" "${{ inputs.base-branch }}" "${{ inputs.output-file }}"
+        "$ACTION_PATH/script.sh" "${{ inputs.compare-mode }}" "${{ inputs.base-branch }}" "${{ inputs.output-file }}"
